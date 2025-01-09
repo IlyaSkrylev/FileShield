@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="FileShield.FileField">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+
+        <HorizontalStackLayout
+             Padding="10"
+             Spacing="10"
+             HorizontalOptions="Fill"
+             HeightRequest="60"
+             BackgroundColor="LightGray"
+              >
+            <Label Text="File Shield"
+                   FontSize="20"
+                   FontFamily="Courier New"
+                   HorizontalOptions="StartAndExpand"
+                   VerticalOptions="Center"
+                   />
+
+            <HorizontalStackLayout  HorizontalOptions="EndAndExpand"  Spacing="10">
+                <Button
+                ImageSource="folder_icon.png"
+                BackgroundColor="Transparent"                
+                WidthRequest="50"
+                HeightRequest="50"
+                Clicked="onAddFolderClicked"
+                />
+
+                <Button
+                 ImageSource="add_icon.png"
+                 BackgroundColor="Transparent"                
+                 WidthRequest="50"
+                 HeightRequest="50"
+                />
+            </HorizontalStackLayout>
+        </HorizontalStackLayout>
+
+
+        <ScrollView  Grid.Row="2">
+            <FlexLayout x:Name="imageFlexLayout"
+                 Wrap="Wrap"
+                 JustifyContent="Start"
+                 AlignItems="Start"
+                 AlignContent="Start"
+                 Direction="Row"
+                 
+              >
+
+            </FlexLayout>
+        </ScrollView>
+
+    </Grid>
+</ContentPage>
