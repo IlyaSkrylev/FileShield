@@ -71,6 +71,9 @@
 	  <MauiXaml Update="FileField.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>
+	  <MauiXaml Update="ImagePreviewPage.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </MauiXaml>
 	  <MauiXaml Update="RegPage.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>

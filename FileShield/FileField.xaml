@@ -24,13 +24,13 @@
                    VerticalOptions="Center"
                    />
 
-            <HorizontalStackLayout  HorizontalOptions="EndAndExpand"  Spacing="10">
+            <HorizontalStackLayout  HorizontalOptions="EndAndExpand" >
                 <Button
                 ImageSource="folder_icon.png"
                 BackgroundColor="Transparent"                
                 WidthRequest="50"
                 HeightRequest="50"
-                Clicked="onAddFolderClicked"
+                Clicked="OnAddFolderClicked"
                 />
 
                 <Button
@@ -38,6 +38,15 @@
                  BackgroundColor="Transparent"                
                  WidthRequest="50"
                  HeightRequest="50"
+                 Clicked="OnAddFileClicked"
+                />
+
+                <Button
+                 ImageSource="back_arrow.png"
+                 BackgroundColor="Transparent"                
+                 WidthRequest="50"
+                 HeightRequest="50"
+                 Clicked="OnBackArrowClicked"
                 />
             </HorizontalStackLayout>
         </HorizontalStackLayout>
@@ -50,7 +59,6 @@
                  AlignItems="Start"
                  AlignContent="Start"
                  Direction="Row"
-                 
               >
 
             </FlexLayout>

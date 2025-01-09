@@ -1,6 +1,9 @@
+using Microsoft.Maui.Layouts;
+using System.IO.Enumeration;
 using System.Security.Cryptography;
 using System.Text;
 using static FileShield.Constants;
+using static FileShield.Cryptography;
 
 namespace FileShield
 {
@@ -21,9 +24,10 @@ namespace FileShield
             directories.Add(login);
 
             ShowFolders();
+            ShowFiles();
         }
 
-        private async void onAddFolderClicked(object sender, EventArgs e)
+        private async void OnAddFolderClicked(object sender, EventArgs e)
         {
             var modalPage = new AddFolderModal();
             modalPage.Unloaded += (_, _) =>
@@ -35,9 +39,36 @@ namespace FileShield
                     if (FolderExists(EncryptedFolderName))
                         return;
                     Directory.CreateDirectory(PathToFile(EncryptedFolderName));
+                    DemonstrateFolder(folderName);
                 }
             };
             await Navigation.PushModalAsync(modalPage);
+        }
+
+        private async void OnAddFileClicked(object sender, EventArgs e)
+        {
+            var result = await FilePicker.PickMultipleAsync();
+
+            if (result != null)
+            {
+                List<string> selectedFiles = result.Select(file => file.FullPath).ToList();
+
+                foreach (string filePath in selectedFiles)
+                {
+                    CreateFile(filePath);
+                    DemonstrateFile(Path.GetFileName(filePath));
+                }
+            }
+        }
+
+        private void OnBackArrowClicked(object sender, EventArgs e)
+        {
+            directories.RemoveAt(directories.Count - 1);
+
+            var imgField = this.FindByName<FlexLayout>("imageFlexLayout");
+            imgField.Clear();
+
+            ShowFolders();
         }
 
         private bool FolderExists(string folderName)
@@ -62,24 +93,116 @@ namespace FileShield
         {
             var imgField = this.FindByName<FlexLayout>("imageFlexLayout");
 
-            var image = new Image
+            var stackLayout = new StackLayout
+            {
+                WidthRequest = 100,
+                HeightRequest = 120,
+                Margin = new Thickness(10),
+                
+            };
+
+            var folder = new Image
             {
                 Source = imgFolderIcon,
                 WidthRequest = 100,
                 HeightRequest = 100,
-                Margin = new Thickness(10)
+            };
+
+            var text = new Label
+            {
+                Text = folderName,
+                HorizontalOptions = LayoutOptions.Center,
+                FontFamily = "Courier New",
+                FontSize = 14
             };
 
             var tapGestureRecognizer = new TapGestureRecognizer();
             tapGestureRecognizer.Tapped += (s, e) => OnFolderClicked(Path.GetFileName(folderName));
-            image.GestureRecognizers.Add(tapGestureRecognizer);
+            folder.GestureRecognizers.Add(tapGestureRecognizer);
 
-            imgField.Children.Add(image);
+            imgField.Children.Add(stackLayout);
+            stackLayout.Children.Add(folder);
+            stackLayout.Children.Add(text);
         }
 
         private void OnFolderClicked(string folderName)
         {
+            directories.Add(EncodeString(folderName,password));
 
+            var imgField = this.FindByName<FlexLayout>("imageFlexLayout");
+            imgField.Clear();
+            ShowFolders();
+            ShowFiles();
+        }
+
+        private async void CreateFile(string path)
+        {
+            string encryptedFileCaption = EncodeString(Path.GetFileNameWithoutExtension(path), password);
+            string newFilePath = PathToFile(encryptedFileCaption + Path.GetExtension(path));
+
+            byte[]? data = EncodeFile(File.ReadAllBytes(path), password);
+            if (data == null) 
+                return;
+
+            await File.WriteAllBytesAsync(newFilePath, data);
+        }
+
+        private void DemonstrateFile(string fileName)
+        {
+            var imgField = this.FindByName<FlexLayout>("imageFlexLayout");
+
+            var stackLayout = new StackLayout
+            {
+                WidthRequest = 100,
+                HeightRequest = 120,
+                Margin = new Thickness(10),
+            };
+
+            var file = new Image
+            {
+                Source = imgFolderIcon,
+                WidthRequest = 100,
+                HeightRequest = 100,
+            };
+
+            string encryptedFileName = EncodeString(Path.GetFileNameWithoutExtension(fileName), password) + Path.GetExtension(fileName);
+            string filePath = PathToFile(encryptedFileName);
+            byte[] encodedFile = File.ReadAllBytes(filePath);
+            byte[] plainFile = DecodeFile(encodedFile, password);
+            file.Source = ImageSource.FromStream(() => new MemoryStream(plainFile));
+
+            var text = new Label
+            {
+                Text = Path.GetFileNameWithoutExtension(fileName),
+                HorizontalOptions = LayoutOptions.Center,
+                FontFamily = "Courier New",
+                FontSize = 14
+            };
+
+            var tapGestureRecognizer = new TapGestureRecognizer();
+            tapGestureRecognizer.Tapped += (s, e) => OnFileClicked(filePath);
+            file.GestureRecognizers.Add(tapGestureRecognizer);
+
+            imgField.Children.Add(stackLayout);
+            stackLayout.Children.Add(file);
+            stackLayout.Children.Add(text);
+        }
+
+        private async void OnFileClicked(string filePath)
+        {
+            string[] files = Directory.GetFiles(PathToDirectory());
+            var modalPage = new ImagePreviewPage(files.ToList(), filePath, password);
+            await Navigation.PushModalAsync(modalPage);
+        }
+
+        private void ShowFiles()
+        {
+            string[] files = Directory.GetFiles(PathToDirectory());
+            foreach (string f in files)
+            {
+                string fileName = DecodeString(Path.GetFileNameWithoutExtension(f), password) + Path.GetExtension(f);
+                DemonstrateFile(fileName);
+            }
         }
 
         private string PathToDirectory()
@@ -95,40 +218,6 @@ namespace FileShield
         private string PathToFile(string fileName)
         {
             return Path.Combine(PathToDirectory(), fileName);
-        }
-
-        public static string EncodeString(string input, string key)
-        {
-            if (string.IsNullOrEmpty(input) || string.IsNullOrEmpty(key))
-                return string.Empty;
-
-            byte[] inputBytes = Encoding.UTF8.GetBytes(input);
-            byte[] keyBytes = Encoding.UTF8.GetBytes(key);
-            byte[] encodedBytes = new byte[inputBytes.Length];
-
-            for (int i = 0; i < inputBytes.Length; i++)
-            {
-                encodedBytes[i] = (byte)(inputBytes[i] ^ keyBytes[i % keyBytes.Length]);
-            }
-
-            return Convert.ToBase64String(encodedBytes);
-        }
-
-        public static string DecodeString(string input, string key)
-        {
-            if (string.IsNullOrEmpty(input) || string.IsNullOrEmpty(key))
-                return string.Empty;
-
-            byte[] inputBytes = Convert.FromBase64String(input);
-            byte[] keyBytes = Encoding.UTF8.GetBytes(key);
-            byte[] decodedBytes = new byte[inputBytes.Length];
-
-            for (int i = 0; i < inputBytes.Length; i++)
-            {
-                decodedBytes[i] = (byte)(inputBytes[i] ^ keyBytes[i % keyBytes.Length]);
-            }
-
-            return Encoding.UTF8.GetString(decodedBytes);
         }
     }
 }
